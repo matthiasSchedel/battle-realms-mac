@@ -16,7 +16,6 @@ BOTTLE="$HOME/Library/Containers/com.isaacmarovitz.Whisky/Bottles/8786C8B7-B3B3-
 GAMEDIR="$BOTTLE/drive_c/Program Files (x86)/GOG.com/Battle Realms Complete"
 WINE="$HOME/Library/Application Support/com.isaacmarovitz.Whisky/Libraries/Wine/bin/wine64"
 DP="/opt/homebrew/bin/displayplacer"
-SCREEN_ID="37D8832A-2D66-02CA-B9F7-8F30A301B230"
 GAME_W=2560
 GAME_H=1600
 
@@ -37,12 +36,20 @@ fi
   -e 's/^Fullscreen.*/Fullscreen              =0/' \
   "$GAMEDIR/Battle_Realms.ini" 2>/dev/null
 
+# Snapshot the live display layout BEFORE launch, so the watchdog restores exactly
+# what the user had — not a hardcoded resolution. `displayplacer list` prints a
+# ready-to-run restore command as its last line; capture its args verbatim.
+SAVED_DISPLAY=""
+if [ -x "$DP" ]; then
+  SAVED_DISPLAY="$("$DP" list 2>/dev/null | /usr/bin/grep -E '^displayplacer "' | /usr/bin/sed -E 's/^displayplacer //')"
+fi
+
 # Watchdog: BR's intro can briefly flip the macOS display; when BR exits (clean quit,
 # crash, or force-quit) put the display + menu bar back to normal.
 (
   for _ in $(seq 1 20); do /usr/bin/pgrep -f 'Battle_Realms_F.exe' >/dev/null 2>&1 && break; sleep 3; done
   while /usr/bin/pgrep -f 'Battle_Realms_F.exe' >/dev/null 2>&1; do sleep 3; done
-  [ -x "$DP" ] && "$DP" "id:${SCREEN_ID} res:2624x1696 hz:120 color_depth:8 enabled:true scaling:off origin:(0,0) degree:0" >/dev/null 2>&1
+  [ -x "$DP" ] && [ -n "$SAVED_DISPLAY" ] && eval "\"$DP\" $SAVED_DISPLAY" >/dev/null 2>&1
   /usr/bin/killall Dock SystemUIServer >/dev/null 2>&1
 ) &
 disown 2>/dev/null
