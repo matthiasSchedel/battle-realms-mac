@@ -6,6 +6,17 @@ playable on an Apple Silicon Mac via [Whisky](https://getwhisky.app).
 Tested on macOS 15.7.3, M1 Max. Battle Realms is unusually hostile to modern Wine — this is
 the recipe that works after a long string of dead ends (see [`ATTEMPTS.md`](ATTEMPTS.md)).
 
+## Status — work in progress
+
+| Aspect | State |
+|---|---|
+| Launches + reaches gameplay | ✅ Working |
+| Single-player, playable | ✅ Working (minor "slight hangs", fully playable) |
+| One-click `.app` launcher | ✅ Working |
+| Main-menu rendering | 🚧 WIP — cosmetic texture glitches (Wine DirectDraw artifact); gameplay unaffected. Fix under investigation. |
+
+This repo is a living record — the recipe is reliable today; the menu-glitch fix is still open.
+
 ## TL;DR — the recipe
 
 1. Install the GOG version of Battle Realms into a Whisky bottle (Wine 7.7, a `winxp64` bottle).
