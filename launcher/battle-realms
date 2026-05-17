@@ -1,0 +1,53 @@
+#!/bin/bash
+# Battle Realms — one-click launcher (Apple Silicon Mac)
+#
+# Working recipe (found 2026-05-17, after Whisky / Porting Kit / CrossOver all failed
+# at the menu):
+#   * Whisky's wine 7.7, BR in WINDOWED mode (Battle_Realms.ini Fullscreen=0).
+#   * Fullscreen=1 fails    -> "Could not find supported display mode".
+#   * Pre-changing the macOS display resolution fails -> "could not initialize display mode".
+#   * So: leave the macOS display alone, run BR as a large window (smaller than the
+#     desktop) on the normal desktop.
+#
+# Known issue: BR's animated main-menu elements render with stray texture quads under
+# wine's DirectDraw. It is cosmetic — in-game rendering is clean.
+
+BOTTLE="$HOME/Library/Containers/com.isaacmarovitz.Whisky/Bottles/8786C8B7-B3B3-4B9D-8C27-D5E5740CB6E9"
+GAMEDIR="$BOTTLE/drive_c/Program Files (x86)/GOG.com/Battle Realms Complete"
+WINE="$HOME/Library/Application Support/com.isaacmarovitz.Whisky/Libraries/Wine/bin/wine64"
+DP="/opt/homebrew/bin/displayplacer"
+SCREEN_ID="37D8832A-2D66-02CA-B9F7-8F30A301B230"
+GAME_W=2560
+GAME_H=1600
+
+# Don't launch a second copy
+/usr/bin/pgrep -f 'Battle_Realms_F.exe' >/dev/null 2>&1 && exit 0
+
+# Pre-flight
+if [ ! -x "$WINE" ] || [ ! -f "$GAMEDIR/Battle_Realms_F.exe" ]; then
+  /usr/bin/osascript -e 'display alert "Battle Realms" message "Whisky or the Battle Realms game files are missing (expected Whisky bottle 8786C8B7)." as critical' >/dev/null 2>&1
+  exit 1
+fi
+
+# Pin BR's video config: windowed, large, 32-bit. The macOS display is left untouched.
+/usr/bin/sed -i '' -E \
+  -e "s/^Width.*/Width                   =${GAME_W}/" \
+  -e "s/^Height.*/Height                  =${GAME_H}/" \
+  -e 's/^Depth.*/Depth                   =32/' \
+  -e 's/^Fullscreen.*/Fullscreen              =0/' \
+  "$GAMEDIR/Battle_Realms.ini" 2>/dev/null
+
+# Watchdog: BR's intro can briefly flip the macOS display; when BR exits (clean quit,
+# crash, or force-quit) put the display + menu bar back to normal.
+(
+  for _ in $(seq 1 20); do /usr/bin/pgrep -f 'Battle_Realms_F.exe' >/dev/null 2>&1 && break; sleep 3; done
+  while /usr/bin/pgrep -f 'Battle_Realms_F.exe' >/dev/null 2>&1; do sleep 3; done
+  [ -x "$DP" ] && "$DP" "id:${SCREEN_ID} res:2624x1696 hz:120 color_depth:8 enabled:true scaling:off origin:(0,0) degree:0" >/dev/null 2>&1
+  /usr/bin/killall Dock SystemUIServer >/dev/null 2>&1
+) &
+disown 2>/dev/null
+
+# Launch. WINEDEBUG=-all keeps BR's startup display-mode scan fast; exec makes this
+# .app's process become wine so macOS sees a responsive app.
+cd "$GAMEDIR" || exit 1
+WINEPREFIX="$BOTTLE" WINEDEBUG="-all" exec "$WINE" Battle_Realms_F.exe
