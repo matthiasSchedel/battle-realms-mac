@@ -17,20 +17,16 @@ The README/ATTEMPTS recipe reproduced exactly. No deviation needed.
 
 ## Findings — launcher robustness, ranked
 
-### 1. Watchdog forces a hardcoded display mode on every exit — risk of leaving the wrong resolution
+### 1. Watchdog forces a hardcoded display mode on every exit — ✅ FIXED in `65a2776`
 
-`launcher/battle-realms:45` restores the display with a literal
-`res:2624x1696 hz:120 color_depth:8`. Two problems:
+Originally: `launcher/battle-realms` restored the display with a literal
+`res:2624x1696 hz:120 color_depth:8` plus a hardcoded `SCREEN_ID` — machine-specific
+values that would set a resolution the user never had on any other Mac.
 
-- It is **machine-specific** and undocumented as such (README only flags `BOTTLE`
-  and `SCREEN_ID`). On any other Mac this sets a resolution the user never had.
-- In the *windowed* recipe BR never calls `SetDisplayMode`, so the display should
-  not flip in the first place. The watchdog restore is likely **dead insurance** —
-  and dead insurance that can itself change the user's resolution is worse than none.
-
-Suggest: capture the *actual* pre-launch mode (`displayplacer list`) into a temp
-file and restore *that*, or drop the resolution-restore entirely and keep only the
-menu-bar refresh. Verify first whether windowed BR ever flips the display at all.
+Fixed on master (`65a2776`): the launcher now snapshots the live layout before
+launch (`displayplacer list`'s own restore command) and replays exactly that on
+exit. This finding is closed; the README change in this PR removes the now-stale
+`SCREEN_ID` hand-edit instruction that `65a2776` left behind.
 
 ### 2. `killall Dock SystemUIServer` on every quit is heavy-handed
 
