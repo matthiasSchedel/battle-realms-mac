@@ -93,11 +93,13 @@ Two extra constraints, learned the hard way:
 - runs a background watchdog that restores the display resolution and refreshes the menu
   bar when BR exits (BR's intro can briefly flip the display).
 
-The script has two machine-specific values you must set for your own Mac:
+One machine-specific value you must set for your own Mac:
 
 - `BOTTLE` — your Whisky bottle's UUID path.
-- `SCREEN_ID` — your display's persistent ID, from `displayplacer list`
-  (install via `brew install displayplacer`).
+
+The display layout is snapshotted live at launch (via `displayplacer list`) and
+restored on exit, so there is nothing display-specific to hand-edit. Install
+displayplacer with `brew install displayplacer`.
 
 To assemble the `.app`: create `Battle Realms.app/Contents/{MacOS,Resources}`, drop
 `battle-realms` into `MacOS/` (and `chmod +x` it), `Info.plist` into `Contents/`, and an
